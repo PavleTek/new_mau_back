@@ -204,6 +204,7 @@ const testEditingCentral = async () => {
 };
 
 const logToken = async () => {
+  console.log("running");
   const token = await authenticate();
   console.log(token);
 };

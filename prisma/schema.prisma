@@ -51,6 +51,7 @@ model Tbl_RAU {
   rau_type_id      Int
   gen_id           Int?
   is_master        Boolean          @default(false)
+  running          Boolean          @default(false)
   scale_factor_u   Float?
   scale_factor_i   Float?
   p_set_scale      Float?

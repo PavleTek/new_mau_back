@@ -1,4 +1,4 @@
-const prisma = require("../prisma.js");
+const prisma = require("../prisma/prisma.js");
 
 const fs = require("fs");
 const { readFile, writeFile } = require("fs/promises");

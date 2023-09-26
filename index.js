@@ -3,7 +3,7 @@ const userService = require("./userService");
 const centralService = require("./centralService");
 const contSystem = require("./system/system.controller");
 const cors = require("cors");
-const { user } = require("./prisma");
+const { user } = require("./prisma/prisma");
 
 const app = express();
 const port = 3000;
@@ -147,6 +147,16 @@ app.get("/rau-detailed/:id", userService.authenticate, async (req, res) => {
     res.status(500).json({ error: "Error fetching RAU details" });
   }
 });
+// New function to get 10 most recent RawData elements
+app.get("/rawdata-by-rau/:id", userService.authenticate, async (req, res) => {
+  const rauId = parseInt(req.params.id);
+  try {
+    const rawData = await centralService.getTenMostRecentRawData(rauId);
+    res.json(rawData);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching recent RawData" });
+  }
+});
 
 // Raw Data Related functions GET
 app.get("/rawdata", userService.authenticate, async (req, res) => {
@@ -270,4 +280,11 @@ app.delete("/rautype/:id", userService.authenticateAdmin, async (req, res) => {
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
+  setInterval(async () => {
+    try {
+      await centralService.updateRunningStatusForAllRAUs();
+    } catch (error) {
+      console.error("Error in updateRAUStatus:", error);
+    }
+  }, 10000);
 });

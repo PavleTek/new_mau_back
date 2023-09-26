@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const prisma = require("./prisma.js");
+const prisma = require("./prisma/prisma.js");
 
 const register = async (req) => {
   const { name, is_admin, mandatory, username, password } = req.body;

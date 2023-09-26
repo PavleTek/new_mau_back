@@ -1,4 +1,4 @@
-const prisma = require("./prisma.js");
+const prisma = require("./prisma/prisma.js");
 
 // Get All, Get By ID, and Get Detailed Rau Functions
 const getAll = async (modelName) => {
@@ -414,6 +414,58 @@ const updateRauType = async (req, res) => {
   }
 };
 
+// RawData managmente and rau updates
+async function updateRunningStatus(rauId) {
+  const currentTimestamp = new Date();
+  const tenSecondsAgo = new Date(currentTimestamp - 10000); // 10 seconds ago
+
+  const mostRecentRawData = await prisma.tbl_RawData.findFirst({
+    where: {
+      rau_id: rauId,
+    },
+    orderBy: {
+      timestamp: 'desc',
+    },
+  });
+
+  if (!mostRecentRawData) {
+    return;
+  }
+
+  const shouldRun = mostRecentRawData.timestamp > tenSecondsAgo;
+
+  await prisma.tbl_RAU.update({
+    where: {
+      id: rauId,
+    },
+    data: {
+      running: shouldRun,
+    },
+  });
+}
+
+async function updateRunningStatusForAllRAUs() {
+  const allRAUs = await prisma.tbl_RAU.findMany();
+
+  for (const rau of allRAUs) {
+    await updateRunningStatus(rau.id);
+  }
+}
+
+async function getTenMostRecentRawData(rauId) {
+  const rawData = await prisma.tbl_RawData.findMany({
+    where: {
+      rau_id: rauId,
+    },
+    orderBy: {
+      timestamp: 'desc',
+    },
+    take: 10,
+  });
+
+  return rawData;
+}
+
 module.exports = {
   getAllCentrals: () => getAll("Tbl_Centrals"),
   getCentralById: (id) => getById("Tbl_Centrals", id),
@@ -445,4 +497,8 @@ module.exports = {
   createRauType: createRauType,
   updateRauType: updateRauType,
   deleteRauTypeById: (id) => deleteById("Tbl_Rau_Type", id),
+
+  updateRunningStatus: (id) => updateRunningStatus(id),
+  getTenMostRecentRawData: (id) => getTenMostRecentRawData(id),
+  updateRunningStatusForAllRAUs: () => updateRunningStatusForAllRAUs(),
 };
