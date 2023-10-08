@@ -62,28 +62,6 @@ const deleteRauWithRelatedRawData = async (rauId) => {
   }
 };
 
-const getRAUWithDetailsById = async (rauId) => {
-  try {
-    const rauWithDetails = await prisma.Tbl_RAU.findUnique({
-      where: {
-        id: rauId,
-      },
-      include: {
-        Tbl_RawData: true,
-        Tbl_Rau_Type: true,
-      },
-    });
-
-    if (!rauWithDetails) {
-      throw new Error("RAU not found");
-    } else {
-      return rauWithDetails;
-    }
-  } catch (error) {
-    throw new Error("Error fetching RAU details");
-  }
-};
-
 // Central Create Update Functions
 const createCentral = async (req, res) => {
   const { cen_name, cen_address, cen_longitude, cen_latitude } = req.body;
@@ -245,6 +223,14 @@ const createRAU = async (req, res) => {
       },
     });
 
+    const fs = require("fs");
+    fs.writeFile("./conf_files/rau_confs/" + newRAU.id + ".txt", rau_conf, function (err) {
+      if (err) {
+        return console.log(err);
+      }
+      console.log("The CSV configuration file was saved!");
+    });
+
     res.status(200).send(newRAU);
   } catch (error) {
     console.log(error);
@@ -253,6 +239,7 @@ const createRAU = async (req, res) => {
 };
 
 const updateRAU = async (req, res) => {
+  console.log("update rau is running");
   const rauId = parseInt(req.params.id);
   const { rau_type_id, gen_id, is_master, scale_factor_u, scale_factor_i, p_set_scale, p_set_offset, rau_conf } =
     req.body;
@@ -274,6 +261,15 @@ const updateRAU = async (req, res) => {
       },
     });
 
+    const fs = require("fs");
+    fs.writeFile("./conf_files/rau_confs/" + rauId + ".txt", rau_conf, function (err) {
+      if (err) {
+        return console.log(err);
+      }
+      console.log("The CSV configuration file was saved!");
+    });
+
+    console.log(updatedRAU);
     res.send(updatedRAU);
   } catch (error) {
     console.log(error);
@@ -284,7 +280,6 @@ const updateRAU = async (req, res) => {
 // Create and update RawData and RAU Type
 
 const createRawData = async (req, res) => {
-  console.log("create raw data called");
   const {
     rau_id,
     timestamp,
@@ -320,7 +315,6 @@ const createRawData = async (req, res) => {
 
     res.status(200).send(newRawData);
   } catch (error) {
-    console.log(error);
     res.status(500).send(error);
   }
 };
@@ -410,6 +404,40 @@ const updateRauType = async (req, res) => {
   }
 };
 
+function parseCsv(contents, rauTypes) {
+  const options = {
+    header: true,
+    delimiter: "\t",
+    skipEmptyLines: true,
+  };
+
+  const parseResult = papa.parse(contents, options);
+  if (parseResult["errors"].length) {
+    console.log("Parsed CSV: ", parseResult["data"]);
+    console.log("CSV parse error: ", parseResult["errors"]);
+    return null;
+  } else {
+    var resultType = [];
+    var resultConfig = {};
+
+    Object.keys(parseResult["data"][0]).forEach((field) => {
+      if (rauTypes) {
+        resultType.push({
+          fieldName: field,
+          dataType: parseResult["data"][0][field],
+          regex: parseResult["data"][1][field],
+        });
+        result = resultType;
+      } else {
+        resultConfig[field] = parseResult["data"][0][field];
+      }
+    });
+
+    if (rauTypes) return resultType;
+    else return resultConfig;
+  }
+}
+
 // RawData managmente and rau updates
 async function updateRunningStatus(rauId) {
   const currentTimestamp = new Date();
@@ -462,6 +490,51 @@ async function getTenMostRecentRawData(rauId) {
   return rawData;
 }
 
+const getRAUById = async (id, res) => {
+  try {
+    var data = await prisma["Tbl_RAU"].findUnique({
+      where: {
+        id: id,
+      },
+    });
+
+    if (data) {
+      const fs = require("fs");
+      var inputTextConfig;
+      try {
+        inputTextConfig = fs.readFileSync("./conf_files/rau_confs/" + data.id + ".txt", "utf8");
+        const fileConfig = parseCsv(inputTextConfig, false);
+        data["rau_file_config"] = fileConfig;
+      } catch (err) {
+        if (err.code === "ENOENT") {
+          console.log("Configuration CSV file for this RAU not found!");
+          data["rau_file_config_error"] = "Configuration CSV file for this RAU not found!";
+        } else {
+          data["rau_file_config_error"] = err.code;
+        }
+      }
+    }
+    return data;
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+const getAllRauTypes = async (res) => {
+  try {
+    var data = await prisma["Tbl_Rau_Type"].findMany();
+    data.forEach((rauType, index) => {
+      const fs = require("fs");
+      const inputTextData = fs.readFileSync("./conf_files/rau_types/" + rauType.conf_file, "utf8");
+      const confFields = parseCsv(inputTextData, true);
+      data[index]["confFields"] = confFields;
+    });
+    return data;
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
 module.exports = {
   getAllCentrals: () => getAll("Tbl_Centrals"),
   getCentralById: (id) => getById("Tbl_Centrals", id),
@@ -476,7 +549,7 @@ module.exports = {
   deleteGeneratorById: (id) => deleteById("Tbl_Generators_1", id),
 
   getAllRAU: () => getAll("Tbl_RAU"),
-  getRAUById: (id) => getById("Tbl_RAU", id),
+  getRAUById: (id) => getRAUById(id),
   getRAUWithDetailsById: (id) => getRAUWithDetailsById(id),
   createRAU: createRAU,
   updateRAU: updateRAU,
@@ -488,7 +561,7 @@ module.exports = {
   updateRawData: updateRawData,
   deleteRawDataById: (id) => deleteById("Tbl_RawData", id),
 
-  getAllRauTypes: () => getAll("Tbl_Rau_Type"),
+  getAllRauTypes: getAllRauTypes,
   getRauTypeById: (id) => getById("Tbl_Rau_Type", id),
   createRauType: createRauType,
   updateRauType: updateRauType,
