@@ -19,7 +19,7 @@ model user {
 model Tbl_Centrals {
   id               Int                @id @default(autoincrement())
   cen_name          String
-  cen_address        String
+  cen_address       String
   cen_longitude     Float?
   cen_latitude      Float?
   Tbl_Generators_1 Tbl_Generators_1[]

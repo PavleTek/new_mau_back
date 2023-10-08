@@ -64,7 +64,6 @@ const deleteRauWithRelatedRawData = async (rauId) => {
 
 const getRAUWithDetailsById = async (rauId) => {
   try {
-    console.log("rau with details start");
     const rauWithDetails = await prisma.Tbl_RAU.findUnique({
       where: {
         id: rauId,
@@ -76,14 +75,11 @@ const getRAUWithDetailsById = async (rauId) => {
     });
 
     if (!rauWithDetails) {
-      console.log(404);
       throw new Error("RAU not found");
     } else {
-      console.log("worked");
       return rauWithDetails;
     }
   } catch (error) {
-    console.log(500);
     throw new Error("Error fetching RAU details");
   }
 };
@@ -257,7 +253,6 @@ const createRAU = async (req, res) => {
 };
 
 const updateRAU = async (req, res) => {
-  console.log("update rau is running");
   const rauId = parseInt(req.params.id);
   const { rau_type_id, gen_id, is_master, scale_factor_u, scale_factor_i, p_set_scale, p_set_offset, rau_conf } =
     req.body;
@@ -279,7 +274,6 @@ const updateRAU = async (req, res) => {
       },
     });
 
-    console.log(updatedRAU);
     res.send(updatedRAU);
   } catch (error) {
     console.log(error);
@@ -290,6 +284,7 @@ const updateRAU = async (req, res) => {
 // Create and update RawData and RAU Type
 
 const createRawData = async (req, res) => {
+  console.log("create raw data called");
   const {
     rau_id,
     timestamp,
@@ -325,6 +320,7 @@ const createRawData = async (req, res) => {
 
     res.status(200).send(newRawData);
   } catch (error) {
+    console.log(error);
     res.status(500).send(error);
   }
 };
@@ -424,7 +420,7 @@ async function updateRunningStatus(rauId) {
       rau_id: rauId,
     },
     orderBy: {
-      timestamp: 'desc',
+      timestamp: "desc",
     },
   });
 
@@ -458,7 +454,7 @@ async function getTenMostRecentRawData(rauId) {
       rau_id: rauId,
     },
     orderBy: {
-      timestamp: 'desc',
+      timestamp: "desc",
     },
     take: 10,
   });

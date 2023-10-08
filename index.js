@@ -16,10 +16,9 @@ app.use("/system", contSystem);
 
 app.post("/users/authenticate", userService.login);
 
-app.post("/users/register", async (req, res) => {
+app.post("/users/register", userService.authenticateAdmin, async (req, res) => {
   try {
     const result = await userService.register(req, res);
-    console.log(result);
     if (result.status === 200) {
       res.json({ status: result.status, data: result.data });
     } else {
@@ -55,12 +54,34 @@ app.get("/users/profile", userService.getUserFromToken, (req, res) => {
   res.json(userData);
 });
 
-app.get("/users", async (req, res) => {
+app.get("/users", userService.authenticate, async (req, res) => {
   try {
     const users = await userService.getAllUsers();
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: "Error fetching users" });
+  }
+});
+
+app.get("/users/:id", userService.authenticate, async (req, res) => {
+  const userId = parseInt(req.params.id);
+
+  try {
+    const user = await userService.getUserById(userId);
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching user by ID" });
+  }
+});
+
+app.delete("/users/:id", userService.authenticateAdmin, async (req, res) => {
+  const id = parseInt(req.params.id, 10); // Convert to integer if it's a string
+  try {
+    const response = await userService.deleteUserById(id);
+    res.status(200).json({ message: response.message, success: response.success });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -214,8 +235,8 @@ app.put("/centrals/:id", userService.authenticateAdmin, centralService.updateCen
 app.delete("/centrals/:id", userService.authenticateAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10); // Convert to integer if it's a string
   try {
-    const deletedRAU = await centralService.deleteCentralById(id);
-    res.status(200).json({ message: "Successfully deleted", deletedRAU });
+    const deletedCentral = await centralService.deleteCentralById(id);
+    res.status(200).json({ message: "Successfully deleted", deletedCentral });
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -275,6 +296,24 @@ app.delete("/rautype/:id", userService.authenticateAdmin, async (req, res) => {
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// User edit
+app.put("/users/:id", userService.authenticateAdmin, async (req, res) => {
+  const userId = parseInt(req.params.id);
+  const updatedUserData = req.body;
+
+  try {
+    const result = await userService.updateUser(userId, updatedUserData);
+
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(400).json({ error: result.message });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Error updating user" });
   }
 });
 

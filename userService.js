@@ -61,14 +61,14 @@ async function changePassword(userId, oldPassword, newPassword) {
     });
 
     if (!user) {
-      return { success: false, message: 'User not found' };
+      return { success: false, message: "User not found" };
     }
 
     // Check if the old password is valid
     const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
 
     if (!isPasswordValid) {
-      return { success: false, message: 'Invalid old password' };
+      return { success: false, message: "Invalid old password" };
     }
 
     // Hash the new password
@@ -84,10 +84,10 @@ async function changePassword(userId, oldPassword, newPassword) {
       },
     });
 
-    return { success: true, message: 'Password updated successfully' };
+    return { success: true, message: "Password updated successfully" };
   } catch (error) {
     console.error(error); // Log the error for debugging
-    return { success: false, message: 'An error occurred' };
+    return { success: false, message: "An error occurred" };
   }
 }
 
@@ -143,6 +143,76 @@ async function getAllUsers() {
   }
 }
 
+async function getUserById(userId) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+
+    return user;
+  } catch (error) {
+    throw new Error(`Error fetching user by ID: ${error.message}`);
+  }
+}
+
+async function deleteUserById(userId) {
+  try {
+    // Check if the user exists before deleting
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+
+    // Delete the user
+    await prisma.user.delete({
+      where: {
+        id: userId,
+      },
+    });
+
+    return { success: true, message: `User with ID ${userId} has been deleted` };
+  } catch (error) {
+    console.error(error); // Log the error for debugging
+    return { success: false, message: "An error occurred while deleting the user" };
+  }
+}
+
+const updateUser = async (userId, updatedUserData) => {
+  try {
+    // Check if a new password is provided and is not null or empty
+    if (updatedUserData.password && updatedUserData.password.trim() !== "") {
+      updatedUserData.password = await bcrypt.hash(updatedUserData.password, 10);
+    } else {
+      // If no new password is provided or it's empty, remove it from the data object
+      delete updatedUserData.password;
+    }
+
+    // Update the user's data in the database
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: updatedUserData,
+    });
+
+    return { success: true, data: updatedUser };
+  } catch (error) {
+    console.error(error); // Log the error for debugging
+    return { success: false, message: "An error occurred while updating the user" };
+  }
+};
+
 const getUserFromToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -185,4 +255,7 @@ module.exports = {
   getProfile,
   getUserFromToken,
   getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUserById,
 };

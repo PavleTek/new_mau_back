@@ -35,12 +35,63 @@ const createCentral = async (token, cenName, cenAddres, cenLongitude, cenLatitud
   }
 };
 
+const createTenRawData = async (token) => {
+  console.log(token);
+  const baseUrl = "http://localhost:3000"; // Replace with your API endpoint
+
+  const currentTimestamp = Date.now(); // Get the current timestamp in milliseconds
+  const rauId = 5;
+
+  // Loop to create 10 rawData elements
+  for (let i = 0; i < 10; i++) {
+    const currentTimestamp = new Date(); // Get the current date and time
+    currentTimestamp.setSeconds(currentTimestamp.getSeconds() - i); // Decrement timestamp by 1 second for each iteration
+
+    const rawData = {
+      rau_id: rauId,
+      timestamp: currentTimestamp, // Convert timestamp to ISO string
+      serial_number: "Serial Number",
+      status: "Status",
+      est_freq: Math.floor(Math.random() * 20) + 1,
+      est_p: Math.floor(Math.random() * 20) + 1,
+      est_q: Math.floor(Math.random() * 20) + 1,
+      est_s: Math.floor(Math.random() * 20) + 1,
+      est_fi: Math.floor(Math.random() * 20) + 1,
+      est_fi_deg: Math.floor(Math.random() * 20) + 1,
+      est_pset: Math.floor(Math.random() * 20) + 1,
+      channel_raw: 'channel',
+    };
+
+    try {
+      // Send a POST request to create the rawData
+      const response = await axios.post(`${baseUrl}/rawdata`, rawData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response);
+      console.log(`RawData ${i + 1} created: ${response.data}`);
+    } catch (error) {
+      console.log(error);
+      console.error(`Error creating RawData ${i + 1}: ${(error.message, error.data)}`);
+    }
+  }
+};
+
 const createCentrals = async () => {
   const token = await authenticate();
   if (token) {
     await createCentral(token, "Central1", "Address1", 0.12345, 0.66);
     await createCentral(token, "Central2", "Address2", 0.54321, 0.77);
     await createCentral(token, "Central3", "Address3", 0.10045, 0.82);
+  }
+};
+
+const populateRawData = async () => {
+  const token = await authenticate();
+  console.log(token);
+  if (token) {
+    await createTenRawData(token);
   }
 };
 
@@ -175,4 +226,4 @@ const createGenerators = async () => {
   }
 };
 
-createGenerators();
+populateRawData();
