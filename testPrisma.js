@@ -1,4 +1,5 @@
 const axios = require("axios");
+const prisma = require("./prisma/prisma.js");
 
 const authenticate = async () => {
   try {
@@ -130,27 +131,6 @@ const createCompleteRau = async (
   }
 };
 
-const createRauType = async (token, typeName, typeDescription, conf_file) => {
-  try {
-    const response = await axios.post(
-      "http://localhost:3000/rautype",
-      {
-        type_name: typeName,
-        type_description: typeDescription,
-        conf_file: conf_file,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    console.log("rauType Created");
-  } catch (error) {
-    console.error("Error creating Rau Type:", error);
-  }
-};
-
 const createBasicRauTypes = async () => {
   const token = await authenticate();
   if (token) {
@@ -209,4 +189,40 @@ const logToken = async () => {
   console.log(token);
 };
 
-logToken();
+const logRauTypes = async () => {
+  var data = await prisma["Tbl_Rau_Type"].findMany();
+  console.log(data);
+};
+
+const createRauType = async () => {
+  const type_name = "KRAFTTEX300";
+  const type_description = "Description test";
+  const conf_file =
+    '{"ID": "^[1-9]\\\\d*$", "IP": "^((\\\\d|[1-9]\\\\d|1\\\\d{2}|2[0-4]\\\\d|25[0-5])\\\\.){3}(\\\\d|[1-9]\\\\d|1\\\\d{2}|2[0-4]\\\\d|25[0-5])$", "PORT": "^[1-9]\\\\d*$", "ENABLED": "^[01]$", "SAVE_OSCILLOGRAPHY": "^[01]$", "EST_PSET_CHANNEL_NUMBER": "^[37]$", "C_KOEF[1]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "C_KOEF[2]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "C_KOEF[3]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "C_KOEF[4]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "C_KOEF[5]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "C_KOEF[6]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "C_KOEF[7]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "C_KOEF[8]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "C_CONS[I]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "C_CONS[U]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "SCALE_FACTOR[I]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "SCALE_FACTOR[U]": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "P_SET_SCALE": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "P_SET_OFFSET": "^[+-]?(\\\\d*\\\\.\\\\d+|\\\\d+\\\\.\\\\d*|\\\\d+)$", "LOG_TIME_PERIOD": "^[1-9]\\\\d*$"}';
+
+  const newRauType = await prisma.Tbl_Rau_Type.create({
+    data: {
+      type_name,
+      type_description,
+      conf_file,
+    },
+  });
+};
+
+const deleteRauTypes = async () => {
+  // Delete the entity with id 10
+  await prisma.Tbl_Rau_Type.delete({
+    where: {
+      id: 10,
+    },
+  });
+
+  // Delete the entity with id 11
+  await prisma.Tbl_Rau_Type.delete({
+    where: {
+      id: 11,
+    },
+  });
+};
+
+logRauTypes();

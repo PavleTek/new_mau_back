@@ -1,5 +1,6 @@
 const express = require("express");
 const userService = require("./userService");
+const rawDataService = require("./rawDataService");
 const centralService = require("./centralService");
 const contSystem = require("./system/system.controller");
 const cors = require("cors");
@@ -159,6 +160,20 @@ app.get("/rau/:id", userService.authenticate, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+app.get("/rau/by-gen/:gen_id", userService.authenticate, async (req, res) => {
+  try {
+    const genId = parseInt(req.params.gen_id);
+    const raus = await centralService.getRAUsByGenId(genId);
+    if (!raus) {
+      res.status(404).json({ error: "RAUs for the specified generator not found" });
+    } else {
+      res.setHeader("Content-Type", "application/json");
+      res.status(200).json(raus);
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 app.get("/rau-detailed/:id", userService.authenticate, async (req, res) => {
   const rauId = parseInt(req.params.id);
   try {
@@ -169,10 +184,30 @@ app.get("/rau-detailed/:id", userService.authenticate, async (req, res) => {
   }
 });
 // New function to get 10 most recent RawData elements
-app.get("/rawdata-by-rau/:id", userService.authenticate, async (req, res) => {
+app.get("/last-ten-entries-by-rau/:id", userService.authenticate, async (req, res) => {
   const rauId = parseInt(req.params.id);
   try {
-    const rawData = await centralService.getTenMostRecentRawData(rauId);
+    const rawData = await rawDataService.getTenMostRecentRawData(rauId);
+    res.json(rawData);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching recent RawData" });
+  }
+});
+// New function to get 10 minutes worth of recent RawData elements
+app.get("/last-ten-minutes-averages-by-rau/:id", userService.authenticate, async (req, res) => {
+  const rauId = parseInt(req.params.id);
+  try {
+    const rawData = await rawDataService.getRawDataLast10MinutesAveragesByRAUId(rauId);
+    res.json(rawData);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching recent RawData" });
+  }
+});
+// New function to get average data of last minute
+app.get("/last-minute-average-by-rau/:id", userService.authenticate, async (req, res) => {
+  const rauId = parseInt(req.params.id);
+  try {
+    const rawData = await rawDataService.getRawDataLastMinuteAveragesByRAUId(rauId);
     res.json(rawData);
   } catch (error) {
     res.status(500).json({ error: "Error fetching recent RawData" });
@@ -314,6 +349,34 @@ app.put("/users/:id", userService.authenticateAdmin, async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ error: "Error updating user" });
+  }
+});
+
+// Download Files functionality
+app.get("/api/files", userService.authenticate, async (req, res) => {
+  try {
+    const files = await rawDataService.listFiles();
+    res.json({ files });
+  } catch (error) {
+    console.error("Error listing files:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get("/api/download/:fileName", userService.authenticate, async (req, res) => {
+  const fileName = req.params.fileName;
+  try {
+    const filePath = await rawDataService.getFilePath(fileName);
+
+    if (!filePath) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    // Stream the file for download
+    res.download(filePath, fileName);
+  } catch (error) {
+    console.error("Error downloading file:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

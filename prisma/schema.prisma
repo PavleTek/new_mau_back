@@ -56,7 +56,7 @@ model Tbl_RAU {
   scale_factor_i   Float?
   p_set_scale      Float?
   p_set_offset     Float?
-  rau_conf          String?
+  rau_conf         String?   @db.LongText
   Tbl_Generators_1 Tbl_Generators_1? @relation(fields: [gen_id], references: [id])
   Tbl_RawData      Tbl_RawData[]
   Tbl_Rau_Type     Tbl_Rau_Type     @relation(fields: [rau_type_id], references: [id])
@@ -80,11 +80,11 @@ model Tbl_RawData {
 }
 
 model Tbl_Rau_Type {
-  id              Int       @id @default(autoincrement())
-  type_name        String
-  type_description String
-  conf_file       String
-  Tbl_RAU         Tbl_RAU[]
+  id                Int       @id @default(autoincrement())
+  type_name         String
+  type_description  String
+  conf_file         String?   @db.LongText
+  Tbl_RAU           Tbl_RAU[]
 }
 
 model system {

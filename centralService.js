@@ -1,4 +1,5 @@
 const prisma = require("./prisma/prisma.js");
+const fs = require("fs");
 
 // Get All, Get By ID, and Get Detailed Rau Functions
 const getAll = async (modelName) => {
@@ -38,6 +39,12 @@ const deleteById = async (modelName, id) => {
 
 const deleteRauWithRelatedRawData = async (rauId) => {
   try {
+    const fs = require("fs");
+    const filePath = `../workers/.raus/RAUS${rauId}.txt`; // Specify the file path
+
+    // Delete the file if it exists
+    fs.unlinkSync(filePath);
+
     // Start a Prisma transaction
     await prisma.$transaction([
       // Delete the related Tbl_RawData records
@@ -222,14 +229,9 @@ const createRAU = async (req, res) => {
         rau_conf,
       },
     });
+    const filePath = `../workers/.raus/RAUS${newRAU.id}.txt`; // Specify the file path
 
-    const fs = require("fs");
-    fs.writeFile("./conf_files/rau_confs/" + newRAU.id + ".txt", rau_conf, function (err) {
-      if (err) {
-        return console.log(err);
-      }
-      console.log("The CSV configuration file was saved!");
-    });
+    convertRauConfToTextFile(newRAU.id, rau_conf, filePath);
 
     res.status(200).send(newRAU);
   } catch (error) {
@@ -239,7 +241,6 @@ const createRAU = async (req, res) => {
 };
 
 const updateRAU = async (req, res) => {
-  console.log("update rau is running");
   const rauId = parseInt(req.params.id);
   const { rau_type_id, gen_id, is_master, scale_factor_u, scale_factor_i, p_set_scale, p_set_offset, rau_conf } =
     req.body;
@@ -261,21 +262,86 @@ const updateRAU = async (req, res) => {
       },
     });
 
-    const fs = require("fs");
-    fs.writeFile("./conf_files/rau_confs/" + rauId + ".txt", rau_conf, function (err) {
-      if (err) {
-        return console.log(err);
-      }
-      console.log("The CSV configuration file was saved!");
-    });
+    const filePath = `../workers/.raus/RAUS${rauId}.txt`; // Specify the file path
 
-    console.log(updatedRAU);
+    convertRauConfToTextFile(rauId, rau_conf, filePath);
+
     res.send(updatedRAU);
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
   }
 };
+
+function convertRauConfToTextFile(rauId, jsonString, outputPath) {
+  // Parse the JSON string
+  const data = JSON.parse(jsonString);
+
+  // Initialize fileContent
+  let fileContent = "";
+
+  // Add the RAU ID only if the 'ID' key is not present in the JSON
+  console.log(rauId, " outside if");
+  if (!data.hasOwnProperty("ID")) {
+    console.log(rauId, " inside if");
+    fileContent += `ID=${rauId}\n`;
+  }
+
+  // Always add the FILE_PREFIX line
+  fileContent += `FILE_PREFIX=RAU${rauId}\n`;
+
+  // Convert the object to a string with key-value pairs separated by '='
+  for (const [key, value] of Object.entries(data)) {
+    // Skip the empty key
+    if (key !== "key") {
+      if (key === "ID") {
+        fileContent += `${key.toUpperCase()}=${rauId}\n`;
+      } else {
+        fileContent += `${key.toUpperCase()}=${value}\n`;
+      }
+    }
+  }
+
+  // Write to the text file
+  fs.writeFile(outputPath, fileContent, (err) => {
+    if (err) {
+      console.error("Error writing to file:", err);
+    } else {
+      console.log(`Data written to ${outputPath}`);
+    }
+  });
+}
+
+function getRauConfValueJsonFromFile(inputPath) {
+  try {
+    // Read the content of the file synchronously
+    const fileContent = fs.readFileSync(inputPath, "utf8");
+
+    let data = {};
+    // Split the file content by new lines and loop through each line
+    const lines = fileContent.split("\n");
+    for (let line of lines) {
+      if (line && !line.startsWith("FILE_PREFIX")) {
+        // Split each line by the '=' to get the key and value
+        let [key, value] = line.split("=");
+        if (key === "id" && !value) {
+          // If 'ID' is empty, skip adding it to the object
+          continue;
+        } else if (key === "key") {
+          // If 'key' is encountered, it should remain empty as per the original JSON structure
+          value = "";
+        }
+        data[key] = value;
+      }
+    }
+
+    // Convert the object to a JSON object
+    return data;
+  } catch (err) {
+    console.error("Error reading the file:", err);
+    throw err; // rethrow the error for the caller to handle
+  }
+}
 
 // Create and update RawData and RAU Type
 
@@ -404,40 +470,6 @@ const updateRauType = async (req, res) => {
   }
 };
 
-function parseCsv(contents, rauTypes) {
-  const options = {
-    header: true,
-    delimiter: "\t",
-    skipEmptyLines: true,
-  };
-
-  const parseResult = papa.parse(contents, options);
-  if (parseResult["errors"].length) {
-    console.log("Parsed CSV: ", parseResult["data"]);
-    console.log("CSV parse error: ", parseResult["errors"]);
-    return null;
-  } else {
-    var resultType = [];
-    var resultConfig = {};
-
-    Object.keys(parseResult["data"][0]).forEach((field) => {
-      if (rauTypes) {
-        resultType.push({
-          fieldName: field,
-          dataType: parseResult["data"][0][field],
-          regex: parseResult["data"][1][field],
-        });
-        result = resultType;
-      } else {
-        resultConfig[field] = parseResult["data"][0][field];
-      }
-    });
-
-    if (rauTypes) return resultType;
-    else return resultConfig;
-  }
-}
-
 // RawData managmente and rau updates
 async function updateRunningStatus(rauId) {
   const currentTimestamp = new Date();
@@ -476,20 +508,6 @@ async function updateRunningStatusForAllRAUs() {
   }
 }
 
-async function getTenMostRecentRawData(rauId) {
-  const rawData = await prisma.tbl_RawData.findMany({
-    where: {
-      rau_id: rauId,
-    },
-    orderBy: {
-      timestamp: "desc",
-    },
-    take: 10,
-  });
-
-  return rawData;
-}
-
 const getRAUById = async (id, res) => {
   try {
     var data = await prisma["Tbl_RAU"].findUnique({
@@ -499,18 +517,15 @@ const getRAUById = async (id, res) => {
     });
 
     if (data) {
-      const fs = require("fs");
       var inputTextConfig;
       try {
-        inputTextConfig = fs.readFileSync("./conf_files/rau_confs/" + data.id + ".txt", "utf8");
-        const fileConfig = parseCsv(inputTextConfig, false);
-        data["rau_file_config"] = fileConfig;
+        const rauConfValuesJson = getRauConfValueJsonFromFile(`../workers/.raus/RAUS${id}.txt`);
+        data["config_values_json"] = rauConfValuesJson;
       } catch (err) {
         if (err.code === "ENOENT") {
-          console.log("Configuration CSV file for this RAU not found!");
-          data["rau_file_config_error"] = "Configuration CSV file for this RAU not found!";
+          console.log("Error Rau File Not found");
         } else {
-          data["rau_file_config_error"] = err.code;
+          console.log("Error Something happened with the RAU file");
         }
       }
     }
@@ -520,15 +535,23 @@ const getRAUById = async (id, res) => {
   }
 };
 
+const getRAUsByGenId = async (genId) => {
+  try {
+    const data = await prisma["Tbl_RAU"].findMany({
+      where: {
+        gen_id: genId,
+      },
+    });
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 const getAllRauTypes = async (res) => {
   try {
     var data = await prisma["Tbl_Rau_Type"].findMany();
-    data.forEach((rauType, index) => {
-      const fs = require("fs");
-      const inputTextData = fs.readFileSync("./conf_files/rau_types/" + rauType.conf_file, "utf8");
-      const confFields = parseCsv(inputTextData, true);
-      data[index]["confFields"] = confFields;
-    });
     return data;
   } catch (error) {
     res.status(500).send(error);
@@ -550,6 +573,7 @@ module.exports = {
 
   getAllRAU: () => getAll("Tbl_RAU"),
   getRAUById: (id) => getRAUById(id),
+  getRAUsByGenId: (id) => getRAUsByGenId(id),
   getRAUWithDetailsById: (id) => getRAUWithDetailsById(id),
   createRAU: createRAU,
   updateRAU: updateRAU,
@@ -568,6 +592,5 @@ module.exports = {
   deleteRauTypeById: (id) => deleteById("Tbl_Rau_Type", id),
 
   updateRunningStatus: (id) => updateRunningStatus(id),
-  getTenMostRecentRawData: (id) => getTenMostRecentRawData(id),
   updateRunningStatusForAllRAUs: () => updateRunningStatusForAllRAUs(),
 };

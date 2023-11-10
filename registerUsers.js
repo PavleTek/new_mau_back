@@ -16,8 +16,7 @@ const registerUser = async (name, is_admin, mandatory, username, password) => {
 };
 
 const registerUsers = async () => {
-  await registerUser("Pavle", true, true, "admin", "admin");
-  await registerUser("Pavle", false, true, "user", "user");
+  await registerUser("Pavle", true, true, "pavle", "pavle");
 };
 
 registerUsers();
