@@ -42,8 +42,13 @@ const deleteRauWithRelatedRawData = async (rauId) => {
     const fs = require("fs");
     const filePath = `../workers/.raus/RAUS${rauId}.txt`; // Specify the file path
 
-    // Delete the file if it exists
-    fs.unlinkSync(filePath);
+    // Delete the file if it exists (handle if it doesn't exist)
+    try {
+      fs.unlinkSync(filePath);
+    } catch (fileError) {
+      // Handle the error if the file doesn't exist (e.g., log it)
+      console.error(`File deletion error (if exists): ${fileError.message}`);
+    }
 
     // Start a Prisma transaction
     await prisma.$transaction([
