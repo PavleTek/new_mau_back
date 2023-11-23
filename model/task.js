@@ -25,6 +25,16 @@ export const updateTasks = (id, data) => {
 	const fields = Object.keys(data);
 	if (fields.length === 0)
 		return Promise.resolve(0);
+	if (data.period !== undefined) {
+		if (data.period.days === 0)
+			delete data.period.days;
+		if (data.period.hours === 0)
+			delete data.period.hours;
+		if (data.period.minutes === 0)
+			delete data.period.minutes;
+		if (data.period.seconds === 0)
+			delete data.period.seconds;
+	}
 	return query(`UPDATE raus.tasks SET ${fields.map(field => `${field} = ?`).join(`,\n`)} WHERE id = ?;`, [ ...Object.values(data), id ])
 		.then(() => getTasks(id))
 		.then(({ id, name, description, period, enabled }) => {
@@ -35,6 +45,14 @@ export const updateTasks = (id, data) => {
 
 export const insertTasks = data => {
 	const { name, description, period } = data;
+	if (period.days === 0)
+		delete period.days;
+	if (period.hours === 0)
+		delete period.hours;
+	if (period.minutes === 0)
+		delete period.minutes;
+	if (period.seconds === 0)
+		delete period.seconds;
 	const fPath = `./tasks/${name}.js`;
 	try {
 		accessSync(fPath);
