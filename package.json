@@ -1,22 +1,28 @@
 {
-  "name": "new_mau_back",
-  "version": "1.0.0",
-  "description": "backend for mau project",
-  "main": "index.js",
+  "name": "krafttex-api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Backend for MAU project",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./server.js"
   },
   "author": "Pavle",
   "license": "ISC",
+  "type": "module",
   "dependencies": {
-    "@prisma/client": "^5.3.1",
-    "axios": "^1.4.0",
+    "archiver": "^6.0.1",
+    "axios": "^1.6.1",
     "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.2",
     "cors": "^2.8.5",
+    "execa": "^8.0.1",
     "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.1",
-    "mysql": "^2.18.1",
-    "papaparse": "^5.4.1",
-    "ping": "^0.4.4"
+    "express-jwt": "^8.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "mariadb": "^3.2.2",
+    "rootpath": "^0.1.2",
+    "ssh2-sftp-client": "^9.1.0",
+    "toad-scheduler": "^3.0.0"
   }
 }
