@@ -65,7 +65,7 @@ RETURNING concat(fn_prefix, '_', date_format(?, '%Y%m%d_%H%i'), '.csv') AS fname
 
 export const samplesCleanup = (secs) =>
   query(`DELETE FROM Tbl_ProcessedData WHERE ts < now() - INTERVAL ? SECOND;`, [secs]).then((res1) =>
-    query(`DELETE FROM Tbl_RawData2 WHERE timestamp < now() - INTERVAL ? SECOND;`, [secs]).then((res2) => ({
+    query(`DELETE FROM Tbl_RawData WHERE timestamp < now() - INTERVAL ? SECOND;`, [secs]).then((res2) => ({
       raw: res2.affectedRows,
       processed: res1.affectedRows,
     }))
