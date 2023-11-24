@@ -46,7 +46,6 @@ export default ({ days, hours, minutes, seconds, milliseconds } = {}, ts_start =
 		.map(({ name }) => name)
 		.filter(name => FTP_FILE_NAME_TEMPLATE.test(name))
 	)
-	.then(list => ftpUpload(list, FTP_DIR_OUTBOX)
-	)
+	.then(list => ftpUpload(list, FTP_DIR_OUTBOX))
 	.then(res => ({ success: true, message: res, ts_start }))
 	.catch(res => ({ success: false, message: res, ts_start }));
