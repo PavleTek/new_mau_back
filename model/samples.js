@@ -22,6 +22,7 @@ SELECT s.id,
        s.est_freq  AS f,
        s.est_p     AS p,
        s.est_q     AS q,
+       s.est_pset AS p_set,
        u.gen_id,
        s.rau_id,
        ROW_NUMBER() OVER (PARTITION BY u.gen_id ORDER BY s.timestamp) AS ordnmb
@@ -41,20 +42,20 @@ SELECT s.id,
    AND NOT u.is_master
 )
 SELECT m.id     AS id_m,
-       s.id     AS id_s,
+       coalesce(s.id, m.id)     AS id_s,
        m.rau_id AS rau_id_m,
-       s.rau_id AS rau_id_s,
+       coalesce(s.rau_id, m.rau_id) AS rau_id_s,
        ? + INTERVAL (m.ordnmb - 1) SECOND AS ts,
        m.f,
        m.p,
        m.q,
-       s.p_set,
+       coalesce(s.p_set, m.p_set) AS p_set,
        m.gen_id,
        g.fn_prefix
   FROM samples_master m
-       INNER JOIN samples_slave s ON m.ordnmb = s.ordnmb AND m.gen_id = s.gen_id
-       INNER JOIN Tbl_Generators_1 g ON m.gen_id = g.id
- ORDER BY m.ordnmb
+       LEFT OUTER JOIN samples_slave s ON m.ordnmb = s.ordnmb AND m.gen_id = s.gen_id
+            INNER JOIN Tbl_Generators_1 g ON m.gen_id = g.id
+ORDER BY m.ordnmb
 RETURNING concat(fn_prefix, '_', date_format(?, '%Y%m%d_%H%i'), '.csv') AS fname,
           date_format(ts, '%Y%m%d-%H:%i:%s')                            AS moment,
           f                                                             AS frequency,
