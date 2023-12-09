@@ -5,6 +5,14 @@ import { add, remove, start, stop } from "../scheduler.js";
 import { log } from "../logger.js";
 import { TASKS_DISPLAY_ROWS } from "../config.js";
 
+export const getLastJobsCount = mins => query(`
+SELECT t.name, count(*) AS cnt
+  FROM raus.jobs j
+       INNER JOIN raus.tasks t ON j.task_id = t.id
+ WHERE j.ts_start >= now() - INTERVAL ? MINUTE
+   AND NOT j.success
+ GROUP BY t.id, t.name;`, [ mins ]);
+
 export const getTasks = (id = null) => id
 	? query("SELECT id, name, description, period, enabled FROM raus.tasks WHERE id = ?;", [ id ])
 		.then(rows => rows?.[0])

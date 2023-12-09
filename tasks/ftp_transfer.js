@@ -2,7 +2,7 @@ import { readdir, rename } from "fs/promises";
 import Client from "ssh2-sftp-client";
 
 import { FTP_DIR_OUTBOX, FTP_DIR_SENT, FTP_FILE_NAME_TEMPLATE } from "../config.js";
-import { getFTPInfo } from "../model/samples.js";
+import { getFTPInfo } from "../model/system.js";
 
 const ftpUpload = (fnames, fpath) => {
 	const sftp = new Client("example-client");

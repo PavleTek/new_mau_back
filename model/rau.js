@@ -177,9 +177,9 @@ const deleteRAUDB = id => query("DELETE FROM raus.Tbl_RAU WHERE id = ?;", [ id ]
 	.then(res => `deleted ${res.affectedRows} RAU`);
 
 export const getRAU = id => id
-	? query("SELECT id, rau_type_id, gen_id, is_master, running, scale_factor_u, scale_factor_i, p_set_scale, p_set_offset, rau_conf FROM raus.Tbl_RAU WHERE id = ?;", [ id ])
+	? query("SELECT id, rau_type_id, gen_id, is_master, started IS NOT NULL AS running, scale_factor_u, scale_factor_i, p_set_scale, p_set_offset, rau_conf FROM raus.Tbl_RAU WHERE id = ?;", [ id ])
 		.then(rows => rows?.[0])
-	: query("SELECT id, rau_type_id, gen_id, is_master, running, scale_factor_u, scale_factor_i, p_set_scale, p_set_offset, rau_conf FROM raus.Tbl_RAU;");
+	: query("SELECT id, rau_type_id, gen_id, is_master, started IS NOT NULL AS running, scale_factor_u, scale_factor_i, p_set_scale, p_set_offset, rau_conf FROM raus.Tbl_RAU;");
 
 export const updateRAU = (id, data) => getRAU(id)
 	.then(({ rau_conf: rau_conf_old }) => {
@@ -214,7 +214,7 @@ export const toggleRAU = (id, enabled) => getRAU(id)
 		rau_conf = JSON.parse(rau_conf);
 		rau_conf = { ...rau_conf, enabled};
 		const { log_time_period, save_oscillography, est_pset_channel_number, mau_1_addr, mau_1_port, k, c_cons_i, c_cons_u } = rau_conf;
-		return updateRAUDB(id, { rau_conf })
+		return updateRAUDB(id, { rau_conf, started: enabled ? new Date() : null })
 			.then(res => setRAUFile({ id, ip: mau_1_addr, port: mau_1_port, enabled, save_oscillography, est_pset_channel_number, c_koef: k, c_cons_i, c_cons_u, scale_factor_i, scale_factor_u, p_set_scale, p_set_offset, log_time_period })
 				.then(() => res)
 			);

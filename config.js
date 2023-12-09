@@ -1,5 +1,8 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
 /*  APP  */
-const APP_DIR = "/home/krafttex/";
+export const APP_DIR = `${path.dirname(fileURLToPath(import.meta.url))}/`;
 export const APP_HTTP_PORT = 4000;
 //const HTTP_PORT = process.env.NODE_ENV === "production" ? 80 : 4000;
 

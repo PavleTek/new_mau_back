@@ -3,17 +3,6 @@ import * as fs from "fs";
 import { query } from "../db.js";
 import { SAMPLES_DIR_HIRES } from "../config.js";
 
-export const getFTPInfo = () => query("SELECT id, `key`, value FROM raus.`system` WHERE `key` LIKE 'ftp_%';").then((res) =>
-    res.reduce((acc, { key, value }) => ({ ...acc, [key]: value }), {})
-  );
-
-export const setFTPInfo = info => Promise.all(
-		Object
-			.entries(info)
-			.map(([ key, value ]) => query("UPDATE raus.`system` SET `value` = ? WHERE `key` = ?;", [ value, key ]))
-	)
-	.then(() => "OK");
-
 export const processSamples = (t_from, t_to) =>
   query(
     `INSERT INTO Tbl_ProcessedData(id_m, id_s, rau_id_m, rau_id_s, ts, f, p, q, p_set, gen_id, fn_prefix)
@@ -175,3 +164,16 @@ export const getHiResFilePath = (fileName) => {
     });
   });
 };
+
+export const getLastSamplesPercentage = mins =>
+  query(
+    `
+SELECT u.id AS rau_id,
+       count(s.rau_id) / (? * 60) AS percentage
+  FROM raus.Tbl_RAU u
+       LEFT OUTER JOIN raus.Tbl_RawData s ON u.id = s.rau_id AND s.timestamp >= now() - INTERVAL ? MINUTE
+ WHERE u.started < now() - INTERVAL ? MINUTE
+ GROUP BY u.id;`,
+    [mins, mins, mins]
+  );
+
