@@ -51,7 +51,25 @@ RETURNING concat(fn_prefix, '_', date_format(?, '%Y%m%d_%H%i'), '.csv') AS fname
           p                                                             AS power,
           p_set                                                         AS ref_power;`,
     [t_from, t_to, t_from, t_to, t_from, t_from]
-  );
+  )
+	.then(res => res
+		.reduce((acc, { fname, moment, frequency, power, ref_power }) => !moment ? { ...acc } : {
+			...acc,
+			[fname]: [ ...(acc[fname] ?? []), `${moment},${frequency.toFixed(5)},${power.toFixed(4)},${ref_power.toFixed(4)}` ]
+		}, {})
+	)
+  .then(data => query(`SELECT concat(fn_prefix, '_', date_format(?, '%Y%m%d_%H%i'), '.csv') AS fname
+  FROM raus.Tbl_Generators_1 g
+       INNER JOIN raus.Tbl_RAU um ON g.id = um.gen_id AND um.is_master AND um.started <= ?
+       INNER JOIN raus.Tbl_RAU us ON g.id = us.gen_id AND NOT us.is_master AND us.started <= ?;`, [t_from, t_from, t_from])
+		.then(res => {
+			res.forEach(({ fname }) => {
+				if (data[fname] === undefined)
+					data[fname] = [];
+			});
+			return data;
+		})
+	);
 
 export const samplesCleanup = (secs) =>
   query(`DELETE FROM Tbl_ProcessedData WHERE ts < now() - INTERVAL ? SECOND;`, [secs]).then((res1) =>

@@ -34,7 +34,6 @@ export default ({ days, hours, minutes, seconds, milliseconds } = {}, ts_start =
 	const mins = Math.round(freq / 1000 / 60);
 	return Promise.all([ check1(mins), check2(mins), check3() ])
 		.then(res => {
-			console.log(res);
 			const success = res.every(({ success }) => success);
 			const message = res.map(({ message }) => message).join(";");
 			if (success)

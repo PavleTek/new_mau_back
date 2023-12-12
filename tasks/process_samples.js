@@ -13,9 +13,9 @@ const dtFloor = (mins, d) => {
 
 const writeCSV = (fname, lines, count) => {
 	if (lines.length < count)
-		return Promise.reject(`${fname} not writen: only ${lines.length} lines`);
+		return Promise.resolve({ success: false, message: `${fname} not writen: only ${lines.length} lines` });
 	return writeFile(`${FTP_DIR_OUTBOX}${fname}`, `Tiempo,Frecuencia[Hz],Potencia[MW],Potencia de Referencia[MW] (SetPoint)\n${lines.slice(0, count).join("\n") ?? ""}`)
-		.then(() => `${fname} writen`);
+		.then(() => ({ success: true, message: `${fname} writen` }));
 };
 
 export default ({ days, hours, minutes, seconds, milliseconds } = {}, ts_start = new Date()) => {
@@ -30,12 +30,6 @@ export default ({ days, hours, minutes, seconds, milliseconds } = {}, ts_start =
 	const t_from = new Date(t_to - mins * 60 * 1000);
 	t_to.setSeconds(t_to.getSeconds() + SAMPLES_BREACH_OFFSET_MINS * 60);
 	return processSamples(t_from, t_to)
-		.then(res => res
-			.reduce((acc, { fname, moment, frequency, power, ref_power }) => ({
-				...acc,
-				[fname]: [ ...(acc[fname] ?? []), `${moment},${frequency.toFixed(5)},${power.toFixed(4)},${ref_power.toFixed(4)}` ] }
-			), {})
-		)
 		.then(res => Object
 			.entries(res)
 			.map(([ fname, lines ]) => writeCSV(fname, lines, count))
@@ -50,7 +44,11 @@ export default ({ days, hours, minutes, seconds, milliseconds } = {}, ts_start =
 			.then(({ failed, res }) => failed ? Promise.reject(res) : Promise.resolve(res))
 		)*/
 		.then(proms => Promise.all(proms))
-		.then(res => ({ success: true, message: JSON.stringify(res), ts_start }))
-		.catch(res => ({ success: false, message: JSON.stringify(res), ts_start }));
+		.then(res => ({
+			success: res.every(({ success }) => success),
+			message: res.length === 0 ? "No data" : res.map(({ message }) => message).join(";"),
+			ts_start
+		}))
+		.catch(res => ({ success: false, message: res, ts_start }));
 };
 
