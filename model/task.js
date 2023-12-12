@@ -14,10 +14,17 @@ SELECT t.name, count(*) AS cnt
  GROUP BY t.id, t.name;`, [ mins ]);
 
 export const getTasks = (id = null) => id
-	? query("SELECT id, name, description, period, enabled FROM raus.tasks WHERE id = ?;", [ id ])
+	? query(`SELECT t.id, t.name, t.description, t.period, t.enabled, count(j.id) AS cntfailed
+	FROM raus.tasks t
+	LEFT OUTER JOIN raus.jobs j ON t.id = j.task_id AND j.ts_start >= now() - INTERVAL 10 MINUTE AND NOT success
+	WHERE t.id = ?
+	GROUP BY t.id, t.name, t.description, t.period, t.enabled;`, [ id ])
 		.then(rows => rows?.[0])
 		.then(({ enabled, ...rest }) => ({ enabled: !!enabled, ...rest }))
-	: query("SELECT id, name, description, period, enabled FROM raus.tasks;")
+	: query(`SELECT t.id, t.name, t.description, t.period, t.enabled, count(j.id) AS cntfailed
+	FROM raus.tasks t
+	LEFT OUTER JOIN raus.jobs j ON t.id = j.task_id AND j.ts_start >= now() - INTERVAL 10 MINUTE AND NOT success
+	GROUP BY t.id, t.name, t.description, t.period, t.enabled;`)
 		.then(res => res
 			.map(({ enabled, ...rest }) => ({ enabled: !!enabled, ...rest }))
 		);
