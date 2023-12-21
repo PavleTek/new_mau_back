@@ -31,7 +31,8 @@ export const DB_AUTH = {
 	password: "krafttex2022",
 	database: "raus",
 	dateStrings: true,
-	supportBigNumbers: true
+	supportBigNumbers: true,
+	timezone: "UTC"
 };
 
 /*  EXEC  */
