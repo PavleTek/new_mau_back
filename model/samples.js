@@ -1,7 +1,6 @@
 import * as fs from "fs";
 
 import { query } from "../db.js";
-import { SAMPLES_DIR_HIRES } from "../config.js";
 
 export const processSamples = (t_from, t_to) =>
   query(
@@ -159,9 +158,9 @@ export const getRawDataLastMinuteAveragesByRAUId = (rau_id) =>
         }
     );
 
-export const listHiResFiles = () => {
+export const listHiResFiles = dir => {
   return new Promise((resolve, reject) => {
-    fs.readdir(SAMPLES_DIR_HIRES, (err, files) => {
+    fs.readdir(dir, (err, files) => {
       if (err) {
         return reject(err);
       }
@@ -170,8 +169,8 @@ export const listHiResFiles = () => {
   });
 };
 
-export const getHiResFilePath = (fileName) => {
-  const fPath = `${SAMPLES_DIR_HIRES}${fileName}`;
+export const getHiResFilePath = (dir, fileName) => {
+  const fPath = `${dir}${fileName}`;
   return new Promise((resolve, reject) => {
     fs.exists(fPath, (exists) => {
       if (exists) {

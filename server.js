@@ -6,9 +6,8 @@ import bodyParser from "body-parser";
 rootpath();
 const app = express();
 
+import { SAMPLES_DIR_HIRES, FTP_DIR_SENT, APP_HTTP_PORT } from "./config.js";
 import { initTasks } from "./model/task.js";
-
-import { APP_HTTP_PORT } from "./config.js";
 import { jwt } from "./utils.js";
 import errorHandler from "./error-handler.js";
 import contRAU from "./controlers/rau.js";
@@ -35,7 +34,23 @@ app.use("/system", contSystem);
 app.get("/api/download/:fileName", async (req, res) => {
   const fileName = req.params.fileName;
   try {
-    const filePath = await getHiResFilePath(fileName);
+    const filePath = await getHiResFilePath(SAMPLES_DIR_HIRES, fileName);
+
+    if (!filePath) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    // Stream the file for download
+    res.download(filePath, fileName);
+  } catch (error) {
+    console.error("Error downloading file:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+app.get("/api/downloadftp/:fileName", async (req, res) => {
+  const fileName = req.params.fileName;
+  try {
+    const filePath = await getHiResFilePath(FTP_DIR_SENT, fileName);
 
     if (!filePath) {
       return res.status(404).json({ error: "File not found" });
@@ -49,7 +64,12 @@ app.get("/api/download/:fileName", async (req, res) => {
   }
 });
 app.get("/api/files", (req, res, next) => {
-  listHiResFiles()
+  listHiResFiles(SAMPLES_DIR_HIRES)
+    .then((files) => res.json({ files }))
+    .catch(next);
+});
+app.get("/api/filesftp", (req, res, next) => {
+  listHiResFiles(FTP_DIR_SENT)
     .then((files) => res.json({ files }))
     .catch(next);
 });
