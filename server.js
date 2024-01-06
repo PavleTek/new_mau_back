@@ -47,8 +47,29 @@ app.get("/api/download/:fileName", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+app.get("/api/downloadftp/:fileName", async (req, res) => {
+  const fileName = req.params.fileName;
+  try {
+    const filePath = await getHiResFilePath(FTP_DIR_SENT, fileName);
+
+    if (!filePath) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    // Stream the file for download
+    res.download(filePath, fileName);
+  } catch (error) {
+    console.error("Error downloading file:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 app.get("/api/files", (req, res, next) => {
   listHiResFiles(SAMPLES_DIR_HIRES)
+    .then((files) => res.json({ files }))
+    .catch(next);
+});
+app.get("/api/filesftp", (req, res, next) => {
+  listHiResFiles(FTP_DIR_SENT)
     .then((files) => res.json({ files }))
     .catch(next);
 });
