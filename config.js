@@ -44,3 +44,4 @@ export const WORKERS_FILE_NAME_TEMPLATE = /^RAUS\d+$/;
 
 /*  TASKS  */
 export const TASKS_DISPLAY_ROWS = 10;
+export const TASKS_PYTHON_EXECUTABLE = "/usr/bin/python";
