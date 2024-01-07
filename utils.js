@@ -108,3 +108,11 @@ export const pause = s => x => new Promise((res, rej) => {
 		res(x);
 	}, 1000 * s);
 });
+
+export const dtFloor = (mins, d) => {
+	const d1 = new Date(d.getTime());
+	d1.setSeconds(0);
+	d1.setMilliseconds(0);
+	d1.setMinutes(d.getMinutes() - d.getMinutes() % mins);
+	return d1;
+};
