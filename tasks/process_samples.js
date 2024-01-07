@@ -1,15 +1,8 @@
 import { writeFile } from "fs/promises";
 
 import { FTP_DIR_OUTBOX, SAMPLES_PERIOD_OFFSET_PERC, SAMPLES_BREACH_OFFSET_MINS } from "../config.js";
+import { dtFloor } from "../utils.js";
 import { processSamples } from "../model/samples.js";
-
-const dtFloor = (mins, d) => {
-	const d1 = new Date(d.getTime());
-	d1.setSeconds(0);
-	d1.setMilliseconds(0);
-	d1.setMinutes(d.getMinutes() - d.getMinutes() % mins);
-	return d1;
-};
 
 const writeCSV = (fname, lines, count) => {
 	if (lines.length < count)
