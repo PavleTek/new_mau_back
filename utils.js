@@ -66,28 +66,33 @@ export const archiveAndDelete = (fPath, fName) => new Promise((res, rej) => {
 	return filePath;
 });
 
-export const cmd = text => {
+const cmd = (text, stdin_text = "") => {
 	const controller = new AbortController();
 	const { signal } = controller;
 	let status = "idle", promise;
 	if (status !== "running") {
 		status = "running";
 		promise = new Promise((resolve, reject) => {
-				exec(text, { signal, cwd: EXEC_DIR }, (error, stdout, stderr) => {
-					if (error) {
-						const { message, code, cmd } = error;
-						status = code;
-						reject({ message, code, cmd });
-						return;
-					}
-					if (stderr) {
-						status = "error";
-						reject(stderr);
-						return;
-					}
-					status = "success";
-					resolve(stdout.trim());
-				});
+			const child = exec(text, { signal, cwd: EXEC_DIR }, (error, stdout, stderr) => {
+				if (error) {
+					const { message, code, cmd } = error;
+					status = code;
+					reject({ message, code, cmd });
+					return;
+				}
+				if (stderr) {
+					status = "error";
+					reject(stderr);
+					return;
+				}
+				status = "success";
+				resolve(stdout.trim());
+			});
+            if (stdin_text) {
+                child.stdin.write(stdin_text);
+                child.stdin.end();
+            }
+            return child;
 		});
 	}
 	promise.cancel = () => {
