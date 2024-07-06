@@ -66,7 +66,7 @@ export const archiveAndDelete = (fPath, fName) => new Promise((res, rej) => {
 	return filePath;
 });
 
-const cmd = (text, stdin_text = "") => {
+export const cmd = (text, stdin_text = "") => {
 	const controller = new AbortController();
 	const { signal } = controller;
 	let status = "idle", promise;
@@ -88,11 +88,11 @@ const cmd = (text, stdin_text = "") => {
 				status = "success";
 				resolve(stdout.trim());
 			});
-            if (stdin_text) {
-                child.stdin.write(stdin_text);
-                child.stdin.end();
-            }
-            return child;
+			if (stdin_text) {
+				child.stdin.write(stdin_text);
+				child.stdin.end();
+			}
+			return child;
 		});
 	}
 	promise.cancel = () => {
